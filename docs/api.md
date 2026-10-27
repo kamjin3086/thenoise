@@ -293,24 +293,14 @@ with urllib.request.urlopen(req) as r:
     open("fox_edited.png", "wb").write(r.read())
 ```
 
-## Repeated requests
+## Caching
 
-Every pipeline stage — reference image, prompt conditioning, sampling, decode —
-keeps the result of the request that produced it, and reuses it only when that
-stage's whole key matches: prompt, negative prompt, guidance scale and LoRAs,
-plus width, height, steps, seed, sampler and sigma grid for the sampling stage.
-
-Two consequences worth knowing:
-
-- A request repeated verbatim is answered from the cache, in a fraction of the
-  sampling time and with byte-identical output. It is a cache hit, not a fast
-  resampling of the same seed.
-- Each stage holds one entry, not a history. Alternating two different requests
-  recomputes everything on every request.
-
-Omitting `seed` (or passing `-1`) draws a fresh seed before any key is built, so
-such a request can never be a hit. When measuring throughput, vary the seed or
-the prompt between requests — otherwise the second number measures the cache.
+Pipeline stages cache their output, keyed by the request fields that affect them,
+so a request repeated verbatim — same prompt, guidance, size, steps, seed and
+sampler — is served from the cache: identical bytes, a fraction of the time, no
+resampling. A request that omits `seed` (or passes `-1`) draws a fresh seed
+before the key is built and so never hits it; when timing repeated requests, vary
+the seed or prompt.
 
 ## Error semantics
 
